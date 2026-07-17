@@ -26,6 +26,40 @@ focuses on.
 
 ---
 
+## Prerequisites — everything this actually needs installed
+
+The steps below assume all of these already work. In practice, a fresh
+WSL/Ubuntu install is missing most of them — here's the full list and how
+to check/install each, so you don't have to discover them one error at a
+time like we did the first time through.
+
+| Tool | Check if installed | Install if missing |
+|---|---|---|
+| **WSL2 + Ubuntu** | You're reading this in a WSL terminal | Covered in Part 1 |
+| **Docker Desktop, with WSL integration ON for your distro** | `docker ps` runs without error | Docker Desktop → Settings → Resources → WSL Integration → toggle your distro on → Apply & Restart |
+| **git** | `git --version` | `sudo apt install git -y` |
+| **unzip** | `unzip -v` | `sudo apt install unzip -y` |
+| **python3** | `python3 --version` | `sudo apt install python3 -y` (usually already present) |
+| **python3-pip** | `pip3 --version` | `sudo apt install python3-pip -y` |
+| **python3-venv** (note: version-specific, e.g. `python3.14-venv`) | `python3 -m venv --help` | `sudo apt install python3-venv -y` (or the exact versioned package apt suggests, e.g. `python3.14-venv`) |
+
+Run this once to catch everything in one pass:
+```bash
+sudo apt update
+sudo apt install git unzip python3 python3-pip python3-venv -y
+```
+If `python3-venv` fails to install by that generic name, apt's error message
+will suggest the exact versioned package name (e.g. `python3.14-venv`) —
+install that instead.
+
+> 💡 **Why a virtual environment (venv) at all?** Modern Ubuntu blocks
+> `pip install` from touching the system-wide Python directly (a safety
+> feature called PEP 668, shows up as an `externally-managed-environment`
+> error). A venv is just an isolated, project-local copy of Python where
+> installing packages is always safe — Step 3 below creates one.
+
+---
+
 ## Step 1: Confirm Mirth is up
 
 ```bash
@@ -52,40 +86,65 @@ from Part 4 already built — the integration tests assert on that specific logi
 > configurable via environment variables instead of hardcoded in `conftest.py` —
 > quick change, just didn't want to guess at names you might still want to edit.
 
-## Step 3: Unpack and install
+## Step 3: Unpack, place it correctly, and install
+
+If you downloaded the zip through Windows (e.g. to your Downloads folder),
+**don't work from that Windows-mounted location directly** — copy it into
+WSL's own Linux filesystem first. Two real reasons this matters, both
+things that actually broke for us:
+
+- Files under `/mnt/c/...` (anywhere on your `C:` drive) can come through
+  as **read-only** to WSL, which breaks creating a Python virtual
+  environment with a `Permission denied` error, even though `ls` and `cd`
+  work fine there.
+- If the folder happens to sit under a protected Windows path like
+  `C:\Program Files\...`, WSL can't write there at all regardless of file
+  permissions.
+
+So, unzip Windows-side as usual, then bring it into your Linux home
+directory:
 
 ```bash
-unzip hl7-interface-qa.zip
-cd hl7-interface-qa
+cp -r "/mnt/c/Users/<your-windows-username>/Downloads/hl7-interface-qa" ~/hl7-interface-qa
+cd ~/hl7-interface-qa
+chmod -R u+w .   # in case the copy came through read-only
+```
+
+(Replace `<your-windows-username>` with your actual Windows username —
+run `ls /mnt/c/Users/` if you're not sure what it is; it doesn't have to
+match your WSL/Linux username.)
+
+Now create a virtual environment and install into that, rather than the
+system Python directly:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-This installs `pytest` and `requests` — nothing else. No virtual environment is
-required, but feel free to use one if you prefer keeping this isolated from other
-Python projects on your machine.
+Your prompt should now start with `(venv)` — that confirms it's active.
+From here on, plain `pip` and `python` both refer to this project's own
+isolated copies, not the system-wide ones.
 
-> 💡 **Running this from WSL (Windows Subsystem for Linux)?** Two gotchas that
-> only show up here, not on native Linux/macOS:
->
-> - **Windows paths need translating.** `C:\Program Files\...` becomes
->   `/mnt/c/Program Files/...` inside WSL — forward slashes, and `C:` becomes
->   `/mnt/c`. Quote the whole path if it has spaces:
->   ```bash
->   cd "/mnt/c/Program Files/Mirth Connect Guides/mirth_pytest/hl7-interface-qa"
->   ```
-> - **Python isn't automatically there just because Windows has it.** WSL's
->   Ubuntu is a separate environment. If `pip` or `python` come back
->   "command not found," install them first:
->   ```bash
->   sudo apt update
->   sudo apt install python3 python3-pip -y
->   ```
->   Then use `pip3` and `python3 -m pytest` in place of `pip` and `pytest`
->   throughout this guide if the shorter commands aren't on your PATH:
->   ```bash
->   pip3 install -r requirements.txt
->   python3 -m pytest tests/unit -v
->   ```
+> ⚠️ **`python3 -m venv venv` failing with no clear error, or `venv/bin/activate: No such file or directory`?**
+> Ubuntu splits the venv module into its own package, separate from
+> `python3` itself. Install the matching one apt suggests (it's
+> version-specific, e.g. `python3.14-venv` for Python 3.14):
+> ```bash
+> sudo apt install python3.14-venv -y
+> ```
+> Then retry the two commands above.
+
+> 💡 **Every new terminal session**, you'll need to re-activate before
+> running tests — packages stay installed, but activation doesn't persist
+> across terminal windows:
+> ```bash
+> cd ~/hl7-interface-qa
+> source venv/bin/activate
+> ```
+
+
 
 ## Step 4: Set connection details (only if yours differ from the defaults)
 
@@ -144,34 +203,31 @@ that the socket accepted it.
   AssertionError: Expected the blank-PID-3 message to be Filtered, but Mirth reports: {'Source': 'SENT'}
   ```
 
-## What's most likely to go wrong the first time
+## Status: confirmed working end-to-end
 
-Be honest with yourself about this one: `mirth_api_client.py` was written against
-Mirth's documented, version-stable status values, but its exact JSON field parsing
-was **not** tested against a live server before now — I don't have one to test
-against directly. The single most likely failure is a `MirthAPIError` or `KeyError`
-coming from that file, not from your channels themselves.
-
-If that happens:
-
-1. Copy the full error message — it includes Mirth's raw response body, which is
-   the actual clue.
-2. Open `https://localhost:8443/api` in a browser. Mirth serves live,
-   version-matched API documentation for your exact server — you can see the real
-   field names for `GET /channels` and `GET /channels/{id}/messages` directly.
-3. Send me what you see (the error, or the real response shape) and I'll adjust
-   the parsing in `mirth_api_client.py` to match.
-
-This is a completely normal step, not a sign the project is broken — it's the same
-"validated clean, then adjusted based on what actually happened" loop Part 4
-describes for the Transformer's own JavaScript.
+The `mirth_api_client.py` parsing described above as "untested against a
+live server" has since been run against a real Mirth 4.5.2 instance and
+fixed through several rounds of real errors — wrong auth header, wrong
+ACK assumption, two wrong guesses at the connectorMessages JSON shape,
+and one wrong test assumption about what "Filtered" means across
+different connectors. All 38 tests (unit + integration) pass against a
+live instance as of this writing. See `docs/06_troubleshooting_log.md`
+for the full blow-by-blow if you hit something similar on your own setup
+— chances are it's already been through this exact loop once.
 
 ## Quick reference: commands
 
 ```bash
 # One-time setup
-unzip hl7-interface-qa.zip && cd hl7-interface-qa
+cp -r "/mnt/c/Users/<your-windows-username>/Downloads/hl7-interface-qa" ~/hl7-interface-qa
+cd ~/hl7-interface-qa
+python3 -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
+
+# Every new terminal session, before running tests
+cd ~/hl7-interface-qa
+source venv/bin/activate
 
 # Every time you want to test
 pytest tests/unit -v          # fast, no Mirth needed
@@ -181,5 +237,3 @@ pytest tests/integration -v   # needs Mirth running, tests real channel behavior
 pytest tests/ -v
 ```
 
-> 💡 On WSL, if `pip`/`pytest` aren't found, use `pip3` and `python3 -m pytest`
-> instead (see the WSL note in Step 3).
