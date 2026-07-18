@@ -84,12 +84,13 @@ Two layers, deliberately kept separate:
   - a blank-OBR-4 order is routed to **Exception_Log**, not silently sent to the lab
   - a missing-OBX-11 result is **Transformed** cleanly rather than erroring out
 
-The API client (`mirth_api_client.py`) was built against Mirth's documented,
-version-stable status values (`RECEIVED`, `FILTERED`, `TRANSFORMED`, `SENT`,
-`QUEUED`, `ERROR`, `PENDING`), with the exact JSON field parsing flagged in its
-docstring as something to double check against your own server's live API docs
-(`https://<host>:8443/api`) if a call ever comes back unexpected — the same
-build-then-verify loop the Mirth guide itself documents for the Transformer scripts.
+**Status: all 38 tests (unit + integration) pass against a real, running Mirth 4.5.2
+instance.** Getting there took five real, distinct fixes — a missing auth header, a
+wrong assumption about MLLP ACKs, two wrong guesses at a nested JSON shape, and one
+wrong assumption about what "Filtered" means across different connectors in the same
+channel. Every one was found by actually running the suite against a live server, not
+by guessing harder. The full blow-by-blow is in `docs/06_troubleshooting_log.md` —
+worth reading if you're extending this and hit something similar.
 
 ## Next steps (in progress)
 
@@ -102,6 +103,22 @@ build-then-verify loop the Mirth guide itself documents for the Transformer scri
 
 ## Background docs
 
-The `docs/` folder has the full walkthrough this automation sits on top of:
-local environment setup, building the mock hospital/lab channels, generating
-mock patient data, and building the Filters and Transformers themselves.
+The `docs/` folder has the full walkthrough this automation sits on top of, as six
+sequential guides:
+
+1. **Local environment setup** — Docker, WSL2, Mirth Connect install
+2. **Mock hospital & lab channels** — building the two MLLP channels
+3. **Mock patient data** — ADT, ORM, and ORU messages for one threaded patient
+4. **Filters and transformers** — the actual interface-analyst logic: reject, flag, default
+5. **Running the Python test suite** — setup, prerequisites, and how to run it
+6. **Troubleshooting log** — every real issue hit setting this up, with cause and fix
+
+Guides 1–4 include diagrams (`docs/images/`) illustrating the architecture, channel
+anatomy, message lifecycle, and the defect-handling decision flow.
+
+Also in `docs/`: **`hl7_practice_messages.md`** — three standalone pairs of clean vs.
+defective HL7 messages (ADT, ORU, ORM), each with a written answer key. These use a
+different mock patient than the main automated thread and aren't wired into pytest —
+they're meant for manual practice, e.g. pasting into Mirth Administrator's "Send
+Message" dialog to sanity-check the Filter/Transformer logic by eye, or for talking
+through the defects out loud in an interview.
