@@ -122,5 +122,3 @@ different mock patient than the main automated thread and aren't wired into pyte
 they're meant for manual practice, e.g. pasting into Mirth Administrator's "Send
 Message" dialog to sanity-check the Filter/Transformer logic by eye, or for talking
 through the defects out loud in an interview.
-
-
