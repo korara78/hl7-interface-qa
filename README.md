@@ -1,5 +1,7 @@
 # HL7 Interface Engine QA — Manual → Automated
 
+![Architecture overview: mock hospital, two integration channels, mock lab, and exception log](docs/images/architecture-overview.svg)
+
 A local healthcare interoperability lab built on **Mirth NextGen Connect**, with a
 **Python/pytest** automation layer on top. It simulates a hospital sending patient
 admissions (ADT) and lab orders (ORM), and a lab system sending back results (ORU),
