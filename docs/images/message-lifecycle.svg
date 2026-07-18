@@ -1,0 +1,29 @@
+<svg viewBox="0 0 900 260" xmlns="http://www.w3.org/2000/svg" font-family="Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arrow3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+      <path d="M0,0 L0,6 L9,3 z" fill="#4a5568"/>
+    </marker>
+  </defs>
+
+  <line x1="60" y1="130" x2="840" y2="130" stroke="#cbd5e0" stroke-width="3"/>
+
+  <circle cx="120" cy="130" r="10" fill="#3182ce"/>
+  <text x="120" y="80" font-size="14" font-weight="bold" text-anchor="middle" fill="#2c5282">ADT^A01</text>
+  <text x="120" y="100" font-size="11" text-anchor="middle" fill="#4a5568">patient admit</text>
+  <text x="120" y="160" font-size="11" text-anchor="middle" fill="#4a5568">establishes MRN</text>
+  <text x="120" y="176" font-size="11" text-anchor="middle" fill="#4a5568">(PID-3 must be populated)</text>
+
+  <circle cx="450" cy="130" r="10" fill="#38a169"/>
+  <text x="450" y="80" font-size="14" font-weight="bold" text-anchor="middle" fill="#276749">ORM^O01</text>
+  <text x="450" y="100" font-size="11" text-anchor="middle" fill="#4a5568">lab order (BMP)</text>
+  <text x="450" y="160" font-size="11" text-anchor="middle" fill="#4a5568">Order ID: ORD5001</text>
+  <text x="450" y="176" font-size="11" text-anchor="middle" fill="#4a5568">(OBR-4 must name the test)</text>
+
+  <circle cx="780" cy="130" r="10" fill="#dd6b20"/>
+  <text x="780" y="80" font-size="14" font-weight="bold" text-anchor="middle" fill="#9c4221">ORU^R01</text>
+  <text x="780" y="100" font-size="11" text-anchor="middle" fill="#4a5568">lab result</text>
+  <text x="780" y="160" font-size="11" text-anchor="middle" fill="#4a5568">matches ORD5001</text>
+  <text x="780" y="176" font-size="11" text-anchor="middle" fill="#4a5568">(OBX-11 = F when final)</text>
+
+  <text x="450" y="230" font-size="13" text-anchor="middle" fill="#718096">Same patient (Jane Doe, MRN100001) and same order ID thread all three messages together</text>
+</svg>
