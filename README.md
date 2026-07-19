@@ -1,5 +1,7 @@
 # HL7 Interface Engine QA — Manual → Automated
 
+[![Tests](https://github.com/korara78/hl7-interface-qa/actions/workflows/tests.yml/badge.svg)](https://github.com/korara78/hl7-interface-qa/actions/workflows/tests.yml)
+
 ![Architecture overview: mock hospital, two integration channels, mock lab, and exception log](docs/images/architecture-overview.svg)
 
 A local healthcare interoperability lab built on **Mirth NextGen Connect**, with a
@@ -104,13 +106,23 @@ channel. Every one was found by actually running the suite against a live server
 by guessing harder. The full blow-by-blow is in `docs/06_troubleshooting_log.md` —
 worth reading if you're extending this and hit something similar.
 
+## Continuous Integration
+
+Every push to `main` and every pull request automatically runs the **full** suite —
+unit and integration — via GitHub Actions
+([`.github/workflows/tests.yml`](.github/workflows/tests.yml)). Unlike the local setup,
+the integration tests run against a Mirth instance spun up fresh inside the CI job
+itself (as a service container), not a persisted local Docker volume — so the workflow
+also imports and deploys the two channels from `mirth-config/` before running
+`pytest tests/integration -v`. See `docs/07_cicd_concepts_and_branching.md` and
+`docs/08_github_actions_ci_setup.md` for the full walkthrough of how this is wired up
+and why.
+
 ## Next steps (in progress)
 
 - **Read back actual transformed content** — right now the OBX-11 test confirms the
   Transformer ran without erroring; the next layer is pulling the *transformed*
   message content itself via the API and asserting OBX-11 literally reads `P`.
-- **GitHub Actions CI** — spin up Mirth in a service container and run the full
-  suite on every push.
 - **LOINC/code-mapping tests** as the Transformer logic grows.
 
 ## Background docs
