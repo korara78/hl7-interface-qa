@@ -121,24 +121,37 @@ least once; until then, GitHub shows a neutral/gray badge.
 
 ---
 
-## What to expect the first real run to look like
+## What actually happened on the first real run
 
-Given everything else in this project, the honest expectation is: **the first run
-will probably fail somewhere in the import/deploy step**, and that's fine — it's the
-same "confirmed by actually testing it" loop as every other real fix documented in
-`docs/06_troubleshooting_log.md`. Likely failure points, in rough order of
-likelihood:
+Consistent with everything else in this project: the first guess wasn't quite right,
+and the real answer came from running it for real, not guessing harder in the abstract.
 
-- The import endpoint's exact request shape (body format, required query params)
-  doesn't match what's assumed above
-- Timing — Mirth takes longer to become ready than expected, even with the polling
-  loop
-- The exported XML references something environment-specific that doesn't translate
-  cleanly into the CI container
+- **The import call** (`POST /channels` with the raw exported XML) worked on the first
+  try — no adjustment needed.
+- **The deploy call** (`POST /channels/_deploy`) did not. Two reasonable JSON body
+  shapes — a bare array of channel IDs, and a wrapped `{"channelIds": [...]}` object —
+  both failed with an identical, generic `500 Request failed`. That the error was
+  *identical* regardless of body shape was the real clue: it meant the body wasn't
+  being parsed at all, not that the shape was slightly wrong.
+- **The actual fix:** the endpoint expects `channelId` as a **query parameter**, not a
+  request body. Once switched, both channels imported and deployed cleanly, and all
+  11 integration tests passed against the freshly-bootstrapped instance — the same
+  channels, same Filters, same Transformers as the local dev setup, rebuilt entirely
+  from the exported XML with no manual steps.
 
-Whatever the actual error turns out to be, the fix follows the same pattern as
-always: read what GitHub Actions' log actually says, adjust the script to match
-reality, push again, confirm.
+`scripts/import_mirth_channels.py` now reflects this confirmed shape directly, with
+the two failed attempts removed rather than left in as speculative fallbacks — same
+cleanup `mirth_api_client.py` went through once its real shape was confirmed.
+
+---
+
+## Result
+
+**Both unit and integration tests (38 total) now pass automatically, from a
+completely fresh Mirth instance, on every push and every pull request** — no
+persisted volume, no manual channel setup, nothing carried over from a previous run.
+This is the strongest form of proof this project can offer that the automation is
+real: the environment is rebuilt from nothing and the tests still pass.
 
 ---
 

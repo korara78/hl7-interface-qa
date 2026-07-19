@@ -118,6 +118,13 @@ also imports and deploys the two channels from `mirth-config/` before running
 `docs/08_github_actions_ci_setup.md` for the full walkthrough of how this is wired up
 and why.
 
+**Confirmed working, not just configured:** all 38 tests pass in CI against a Mirth
+instance rebuilt entirely from scratch on every run — no persisted state, no manual
+setup carried over. Getting there took one more real fix, on top of the five in
+`docs/06_troubleshooting_log.md`: Mirth's channel-deploy endpoint silently rejects a
+JSON body and expects a query parameter instead, found only by running it for real in
+GitHub Actions.
+
 ## Next steps (in progress)
 
 - **Read back actual transformed content** — right now the OBX-11 test confirms the

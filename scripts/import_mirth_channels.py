@@ -13,13 +13,14 @@ genuinely empty Mirth container, so this script is what recreates the
 Hospital_to_Lab_ADT_ORM / Lab_Receives_ADT_ORM setup Part 2 and Part 4 walk
 through building manually.
 
-⚠️ Honest flag, in the spirit of this project's own docs: the exact
-POST /channels and POST /channels/_deploy request shapes below are based on
-Mirth's REST API documentation, not yet confirmed against a live GitHub
-Actions run. If this fails, the error message will point at the actual
-response body -- the same "guess, run it for real, fix it" loop
-mirth_api_client.py went through. Expect this file to need at least one
-round of adjustment the first time it actually runs in CI.
+⚠️ Confirmed against a real GitHub Actions run (not just Mirth's docs): the
+import endpoint (POST /channels, raw XML body) worked on the first guess.
+The deploy endpoint (POST /channels/_deploy) did not -- two reasonable
+JSON-body shapes (a bare array of IDs, and a wrapped object) both failed
+identically with a generic 500, which turned out to mean the endpoint
+doesn't consume a body at all. It expects channelId as a query parameter
+instead. Same "guess, run it for real, fix it" loop mirth_api_client.py
+went through against the live Mirth server -- just one more example of it.
 """
 
 import sys
@@ -95,38 +96,18 @@ def import_and_deploy_channel(xml_path: Path):
     channel_id = match.group(1)
 
     print(f"Deploying {xml_path.name} (id={channel_id}) ...")
+    # Confirmed against a real GitHub Actions run: this endpoint does NOT
+    # consume a JSON request body (neither a bare array of IDs nor a
+    # wrapped object -- both tried first and both failed identically with
+    # a generic 500, which was the tell that the body wasn't being parsed
+    # at all). It expects channelId as a query parameter instead.
     deploy_resp = requests.post(
         f"{MIRTH_API_BASE}/channels/_deploy",
         headers=_headers(),
-        json=[channel_id],
+        params={"channelId": channel_id, "returnErrors": "true"},
         verify=False,
         timeout=60,
     )
-
-    if not deploy_resp.ok:
-        print(f"Deploy attempt 1 (bare JSON array body) failed ({deploy_resp.status_code}): {deploy_resp.text}")
-        print("Retrying with a wrapped JSON object body ...")
-        deploy_resp = requests.post(
-            f"{MIRTH_API_BASE}/channels/_deploy",
-            headers=_headers(),
-            json={"channelIds": [channel_id], "returnErrors": True},
-            verify=False,
-            timeout=60,
-        )
-
-    if not deploy_resp.ok:
-        # Both body-based attempts failed with the *same* generic error --
-        # a sign the endpoint may not be consuming a request body at all.
-        # Try channelId as a repeated query parameter instead, no body.
-        print(f"Deploy attempt 2 (wrapped JSON body) failed ({deploy_resp.status_code}): {deploy_resp.text}")
-        print("Retrying with channelId as a query parameter, no body ...")
-        deploy_resp = requests.post(
-            f"{MIRTH_API_BASE}/channels/_deploy",
-            headers=_headers(),
-            params={"channelId": channel_id, "returnErrors": "true"},
-            verify=False,
-            timeout=60,
-        )
 
     if not deploy_resp.ok:
         raise RuntimeError(f"Failed to deploy {xml_path.name}: {deploy_resp.status_code} {deploy_resp.text}")

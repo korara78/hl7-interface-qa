@@ -127,6 +127,16 @@ serialization shape is the part you confirm empirically.
    destination at all. Fixed by checking the `Source` connector's status
    specifically for the channel-level Filter's decision, rather than
    treating any `FILTERED` anywhere as equivalent.
+6. **`POST /channels/_deploy` silently rejects a JSON body** — confirmed in
+   GitHub Actions, not locally: two reasonable body shapes (a bare array of
+   channel IDs, and a wrapped `{"channelIds": [...]}` object) both returned
+   an identical, generic `500 Request failed`, with no field-level detail.
+   The fact that changing the body shape made *no difference at all* was
+   the real signal — it meant the body wasn't being parsed at all, not that
+   it was shaped slightly wrong. The actual fix: pass `channelId` as a
+   **query parameter** instead of a request body. Once switched, both
+   channels imported and deployed cleanly on a completely fresh Mirth
+   instance with zero manual setup.
 
 ---
 
