@@ -104,19 +104,26 @@ def import_and_deploy_channel(xml_path: Path):
     )
 
     if not deploy_resp.ok:
-        # First attempt (bare JSON array of IDs) failed -- try the other
-        # commonly-documented shape for this endpoint: a wrapped object
-        # with a "channelIds" key, instead of a bare array. Confirmed by
-        # running this against a live GitHub Actions run that the bare
-        # array returns a generic 500 with no useful detail -- this is a
-        # genuine guess-and-check round, same as mirth_api_client.py went
-        # through against the live Mirth server.
-        print(f"First deploy attempt failed ({deploy_resp.status_code}): {deploy_resp.text}")
-        print("Retrying with an alternate request body shape ...")
+        print(f"Deploy attempt 1 (bare JSON array body) failed ({deploy_resp.status_code}): {deploy_resp.text}")
+        print("Retrying with a wrapped JSON object body ...")
         deploy_resp = requests.post(
             f"{MIRTH_API_BASE}/channels/_deploy",
             headers=_headers(),
             json={"channelIds": [channel_id], "returnErrors": True},
+            verify=False,
+            timeout=60,
+        )
+
+    if not deploy_resp.ok:
+        # Both body-based attempts failed with the *same* generic error --
+        # a sign the endpoint may not be consuming a request body at all.
+        # Try channelId as a repeated query parameter instead, no body.
+        print(f"Deploy attempt 2 (wrapped JSON body) failed ({deploy_resp.status_code}): {deploy_resp.text}")
+        print("Retrying with channelId as a query parameter, no body ...")
+        deploy_resp = requests.post(
+            f"{MIRTH_API_BASE}/channels/_deploy",
+            headers=_headers(),
+            params={"channelId": channel_id, "returnErrors": "true"},
             verify=False,
             timeout=60,
         )

@@ -49,5 +49,14 @@ jobs:
       - name: Import and deploy Mirth channels
         run: python scripts/import_mirth_channels.py
 
+      - name: Dump Mirth server logs (only if the previous step failed)
+        if: failure()
+        run: |
+          echo "Looking for the Mirth service container..."
+          docker ps -a --filter "ancestor=nextgenhealthcare/connect:4.5.2" --format "{{.ID}}" | while read -r cid; do
+            echo "=== Logs for container $cid ==="
+            docker logs "$cid" --tail 200
+          done
+
       - name: Run integration tests
         run: pytest tests/integration -v
