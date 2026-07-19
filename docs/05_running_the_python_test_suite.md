@@ -203,6 +203,15 @@ that the socket accepted it.
   AssertionError: Expected the blank-PID-3 message to be Filtered, but Mirth reports: {'Source': 'SENT'}
   ```
 
+### What a full run actually looks like
+
+Every test, individually named, all passing — this is a real run against a live
+Mirth 4.5.2 instance, not a mock or a staged example:
+
+![Full pytest run: all 38 tests individually listed as PASSED](images/pytest_results_full.png)
+
+![Final summary: 38 passed, 5 warnings in 7.33s](images/pytest_results_summary.png)
+
 ## Status: confirmed working end-to-end
 
 The `mirth_api_client.py` parsing described above as "untested against a
