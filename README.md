@@ -10,6 +10,16 @@ routed through a real interface engine over the actual MLLP protocol hospitals u
 This project exists to answer one question concretely: *can this person move from
 manually clicking through test cases to actually automating them?*
 
+**Proof, not just a claim:** unlike a UI project, there's nothing to click through here
+to see it work — the test output *is* the deliverable. This is a real run against a
+live Mirth instance, not a mock:
+
+![Full pytest run: all 38 tests individually listed as PASSED](docs/images/pytest_results_full.png)
+
+![38 passed, 5 warnings — final summary](docs/images/pytest_results_summary.png)
+
+See `docs/05_running_the_python_test_suite.md` if you want to reproduce this yourself.
+
 ## Why this project
 
 Three real-world defects show up constantly in interface engineering, and they all
