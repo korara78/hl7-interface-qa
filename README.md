@@ -5,7 +5,7 @@
 A local healthcare interoperability lab built on **Mirth NextGen Connect**, with a
 **Python/pytest** automation layer on top. It simulates a hospital sending patient
 admissions (ADT) and lab orders (ORM), and a lab system sending back results (ORU),
-routed through a real interface engine over the actual MLLP protocol hospitals use.
+routed through a real interface engine over the actual MLLP protocol hospitals use. 
 
 This project exists to answer one question concretely: *can this person move from
 manually clicking through test cases to actually automating them?*
