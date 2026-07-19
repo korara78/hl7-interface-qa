@@ -1,0 +1,53 @@
+name: Tests
+
+# Runs automatically on every push to main, and on every pull request
+# targeting main. This is the "CI" half of CI/CD: catch a broken build or
+# a failing test immediately, before it's merged or relied on.
+#
+# Unlike a unit-tests-only workflow, this one also spins up a real Mirth
+# Connect instance as a service container, imports the two channels
+# exported to mirth-config/, deploys them, and then runs the FULL suite --
+# unit and integration -- against that live instance. This mirrors what
+# `pytest tests/ -v` does locally against your own Docker container, just
+# rebuilt from scratch on every run instead of a persisted volume.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mirth:
+        image: nextgenhealthcare/connect:4.5.2
+        ports:
+          - 8443:8443
+          - 6661:6661
+          - 6662:6662
+        # No volume mount here on purpose -- CI always wants a genuinely
+        # fresh, empty Mirth, built up by the import step below, not a
+        # persisted one like the local dev setup uses.
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run unit tests
+        run: pytest tests/unit -v
+
+      - name: Import and deploy Mirth channels
+        run: python scripts/import_mirth_channels.py
+
+      - name: Run integration tests
+        run: pytest tests/integration -v
