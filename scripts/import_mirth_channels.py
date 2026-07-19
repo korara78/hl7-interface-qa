@@ -84,7 +84,7 @@ def import_and_deploy_channel(xml_path: Path):
         timeout=30,
     )
     if not resp.ok:
-        raise RuntimeError(f"Failed to import {xml_path.name}: {resp.status_code} {resp.text[:500]}")
+        raise RuntimeError(f"Failed to import {xml_path.name}: {resp.status_code} {resp.text}")
 
     # Pull the channel's id back out of the XML we just sent, so we know what to deploy.
     # Mirth channel XML has a top-level <id>...</id> element.
@@ -102,8 +102,27 @@ def import_and_deploy_channel(xml_path: Path):
         verify=False,
         timeout=60,
     )
+
     if not deploy_resp.ok:
-        raise RuntimeError(f"Failed to deploy {xml_path.name}: {deploy_resp.status_code} {deploy_resp.text[:500]}")
+        # First attempt (bare JSON array of IDs) failed -- try the other
+        # commonly-documented shape for this endpoint: a wrapped object
+        # with a "channelIds" key, instead of a bare array. Confirmed by
+        # running this against a live GitHub Actions run that the bare
+        # array returns a generic 500 with no useful detail -- this is a
+        # genuine guess-and-check round, same as mirth_api_client.py went
+        # through against the live Mirth server.
+        print(f"First deploy attempt failed ({deploy_resp.status_code}): {deploy_resp.text}")
+        print("Retrying with an alternate request body shape ...")
+        deploy_resp = requests.post(
+            f"{MIRTH_API_BASE}/channels/_deploy",
+            headers=_headers(),
+            json={"channelIds": [channel_id], "returnErrors": True},
+            verify=False,
+            timeout=60,
+        )
+
+    if not deploy_resp.ok:
+        raise RuntimeError(f"Failed to deploy {xml_path.name}: {deploy_resp.status_code} {deploy_resp.text}")
 
     print(f"{xml_path.name} imported and deployed.")
 
