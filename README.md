@@ -1,5 +1,7 @@
 # HL7 Interface Engine QA — Manual → Automated
 
+![Mirth Connect Dashboard: both channels started, real message traffic — received, filtered, sent, and error counts](docs/images/mirth_dashboard.png)
+
 [![Tests](https://github.com/korara78/hl7-interface-qa/actions/workflows/tests.yml/badge.svg)](https://github.com/korara78/hl7-interface-qa/actions/workflows/tests.yml)
 
 ![Architecture overview: mock hospital, two integration channels, mock lab, and exception log](docs/images/architecture-overview.svg)
